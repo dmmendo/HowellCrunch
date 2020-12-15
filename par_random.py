@@ -13,8 +13,8 @@ import time
 from itertools import permutations
 from itertools import combinations
 
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.metrics import accuracy_score
+from sklearn.ensemble import RandomForestRegressor
+from sklearn.metrics import mean_absolute_error
 
 tf.enable_v2_behavior()
 
@@ -27,7 +27,6 @@ ds_train, ds_info = tfds.load(
     'howell',
     split=['train'],
     shuffle_files=False,
-    as_supervised=True,
     with_info=True,
 )
 
@@ -35,18 +34,15 @@ ds_numpy = tfds.as_numpy(ds_train)
 profile_features = []
 labels = []
 for ex in ds_numpy[0]:
-  profile_features.append(ex[0])
-  labels.append(ex[1])
+  profile_features.append([ex['age'],ex['height'],ex['male']])
+  labels.append(ex['weight'])
 
 print("dataset size:",len(labels))
-
-def Error(labels,preds):
-  return accuracy_score(labels,preds)
 
 """## Limited Data Experiments"""
 print("begin experiment")
 num_trials = 32
-sub_proc_trials = 1000
+sub_proc_trials = 100000
 this_train_sizes = np.linspace(0.01,1,100)
 results = Manager().list([0 for i in range(sub_proc_trials*num_trials*len(this_train_sizes))])
 
@@ -61,8 +57,8 @@ def run_trial(profile_features,labels,this_train_sizes,results,num_trials,n):
         cur_X_train, cur_X_test, cur_y_train, cur_y_test = train_test_split(profile_features,labels,test_size=1-this_train_sizes[i],random_state = n)
       else:
         cur_X_train, cur_y_train = profile_features,labels
-      reg = RandomForestClassifier().fit(cur_X_train,cur_y_train)
-      results[num_trials*len(this_train_sizes)*n  + j*len(this_train_sizes) + i] = Error(labels,reg.predict(profile_features))
+      reg = RandomForestRegressor().fit(cur_X_train,cur_y_train)
+      results[num_trials*len(this_train_sizes)*n  + j*len(this_train_sizes) + i] = mean_absolute_error(labels,reg.predict(profile_features))
 
 procs = []
 for n in range(num_trials):
