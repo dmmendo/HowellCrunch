@@ -24,7 +24,6 @@ ds_train, ds_info = tfds.load(
     'howell',
     split=['train'],
     shuffle_files=False,
-    as_supervised=True,
     with_info=True,
 )
 
